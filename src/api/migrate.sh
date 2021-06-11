@@ -1,0 +1,1 @@
+migrate -source file://migration/ -database 'mysql://admin:admin@tcp(mysql)/root' up 1
