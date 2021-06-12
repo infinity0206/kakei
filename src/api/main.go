@@ -36,56 +36,60 @@ type Model struct {
   ID uint `gorm:"primary_key" json:"id"`
   CreatedAt time.Time
 	UpdatedAt time.Time
-  DeletedAt *time.Time `sql:"index" json:"-"`
+  DeletedAt *time.Time `gorm:"index" json:"-"`
 }
 
 type Assignee struct {
 	Model
-	Name string
+	Name string `gorm:"unique;not_null;" binding:"required" json:"name"`
 }
 
 type Task struct {
 	Model
-	Name string
-	Type int
+	Name string `gorm:"unique;not_null;" binding:"required" json:"name"`
+	Type int `gorm:"unique;not_null;" binding:"required" json:"type"`
   AssigneeRefer int
   Assignee Assignee `gorm:"foreignKey:AssigneeRefer"`
-}
-
-
-type JsonRequest struct {
-	FieldStr  string `json:"field_str"`
-	FieldInt  int    `json:"field_int"`
-	FieldBool bool   `json:"field_bool"`
 }
 
 func main() {
   db := GetDBConn()
 
+  db.DropTable("assignees")
+  db.DropTable("tasks")
    // テーブルの作成
   db.AutoMigrate(&Assignee{})
   db.AutoMigrate(&Task{})
 
   r := gin.Default()
   r.GET("/tasks", func(c *gin.Context) {
-      c.JSON(http.StatusOK, gin.H{
-          "message": "tasks",
-      })
+    c.JSON(http.StatusOK, gin.H{
+        "message": "tasks",
+    })
   })
 
-	r.GET("/asignees", func(c *gin.Context) {
+	r.GET("/assignees", func(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{
         "message": "asignees",
     })
   })
 
-  r.POST("/asignees", func(c *gin.Context) {
-		var json JsonRequest
-		if err := c.ShouldBindJSON(&json); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+  r.POST("/assignees", func(c *gin.Context) {
+		var assignee Assignee
+		if err := c.ShouldBindJSON(&assignee); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+        "error": err.Error(),
+      })
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"str": json.FieldStr, "int": json.FieldInt, "bool": json.FieldBool})
+
+    // insert処理
+    db.NewRecord(&assignee);
+    db.Create(&assignee);
+		c.JSON(http.StatusOK, gin.H{
+      "code": http.StatusOK,
+      "status": "ok",
+    })
 	})
     
   r.Run(":3001")  // EXPOSE Ports
