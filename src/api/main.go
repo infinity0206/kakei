@@ -41,15 +41,14 @@ type Model struct {
 
 type Assignee struct {
 	Model
-	Name string `gorm:"unique;not_null;" binding:"required" json:"name"`
+	Name string `gorm:"not_null;" binding:"required" json:"name"`
 }
 
 type Task struct {
 	Model
 	Name string `gorm:"unique;not_null;" binding:"required" json:"name"`
-	Type int `gorm:"unique;not_null;" binding:"required" json:"type"`
-  AssigneeRefer int
-  Assignee Assignee `gorm:"foreignKey:AssigneeRefer"`
+  Assignee Assignee `gorm:"foreignkey:AssigneeId" json:"assignee"`
+  AssigneeId int
 }
 
 func main() {
@@ -63,14 +62,63 @@ func main() {
 
   r := gin.Default()
   r.GET("/tasks", func(c *gin.Context) {
+    var task []Task
+    result := db.Find(&task)
+    if result.Error != nil {
+      // ここでエラーハンドリング
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error": result.Error,
+      })
+			return
+    }
+
     c.JSON(http.StatusOK, gin.H{
-        "message": "tasks",
+      "message": "task",
+      "data": result.Value,
     })
   })
 
+  r.POST("/tasks", func(c *gin.Context) {
+		var task Task
+    var assignee Assignee
+		if err := c.ShouldBindJSON(&task); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+        "error": err.Error(),
+      })
+			return
+		}
+
+    // insert処理
+    // db.First(&task).Related(db.First(&assignee).Value);
+    db.First(&assignee);
+    task.Assignee = assignee;
+    db.NewRecord(&task);
+    db.Create(&task);
+    // db.Create(Task{
+    //   Name: task.Name,
+    //   Type: task.Type,
+    //   Assignee: assignee,
+    // });
+		c.JSON(http.StatusOK, gin.H{
+      "code": http.StatusOK,
+      "status": "ok",
+    })
+	})
+
 	r.GET("/assignees", func(c *gin.Context) {
+    var assignee []Assignee
+    result := db.Find(&assignee)
+    if result.Error != nil {
+      // ここでエラーハンドリング
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error": result.Error,
+      })
+			return
+    }
+
     c.JSON(http.StatusOK, gin.H{
-        "message": "asignees",
+      "message": "assignees",
+      "data": result.Value,
     })
   })
 
