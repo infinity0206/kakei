@@ -7,6 +7,7 @@ import (
   "github.com/jinzhu/gorm"
   _ "github.com/jinzhu/gorm/dialects/mysql"
   "net/http"
+  // "fmt"
 )
 
 func GetDBConn() *gorm.DB {
@@ -40,23 +41,25 @@ type Model struct {
 }
 
 type Assignee struct {
-	Model
+	gorm.Model
 	Name string `gorm:"not_null;" binding:"required" json:"name"`
+  Tasks []*Task `gorm:"many2many:assignee_tasks;" json:"tasks"`
 }
 
 type Task struct {
-	Model
-	Name string `gorm:"unique;not_null;" binding:"required" json:"name"`
-  Assignee Assignee `gorm:"foreignkey:AssigneeId" json:"assignee"`
-  AssigneeId int
+	gorm.Model
+	Name string `gorm:"not_null;" binding:"required" json:"name"`
+  Assignees []*Assignee `gorm:"many2many:assignee_tasks;" json:"assignees"`
 }
 
 func main() {
   db := GetDBConn()
 
+  db.DropTable("assignee_tasks")
   db.DropTable("assignees")
   db.DropTable("tasks")
-   // テーブルの作成
+
+  // テーブルの作成
   db.AutoMigrate(&Assignee{})
   db.AutoMigrate(&Task{})
 
@@ -80,7 +83,7 @@ func main() {
 
   r.POST("/tasks", func(c *gin.Context) {
 		var task Task
-    var assignee Assignee
+    // var assignee Assignee
 		if err := c.ShouldBindJSON(&task); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
         "error": err.Error(),
@@ -89,16 +92,15 @@ func main() {
 		}
 
     // insert処理
-    // db.First(&task).Related(db.First(&assignee).Value);
-    db.First(&assignee);
-    task.Assignee = assignee;
-    db.NewRecord(&task);
+    // db.NewRecord(&task);
     db.Create(&task);
-    // db.Create(Task{
-    //   Name: task.Name,
-    //   Type: task.Type,
-    //   Assignee: assignee,
-    // });
+    // if err := db.Model(&assignee).Association("tasks").Append(&task).Error; err != nil {
+    //   c.JSON(http.StatusBadRequest, gin.H{
+    //     "error": err.Error(),
+    //   })
+    //   return
+    // }
+
 		c.JSON(http.StatusOK, gin.H{
       "code": http.StatusOK,
       "status": "ok",
@@ -118,11 +120,12 @@ func main() {
 
     c.JSON(http.StatusOK, gin.H{
       "message": "assignees",
-      "data": result.Value,
+      "data": result,
     })
   })
 
   r.POST("/assignees", func(c *gin.Context) {
+    // var task Task
 		var assignee Assignee
 		if err := c.ShouldBindJSON(&assignee); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -132,8 +135,15 @@ func main() {
 		}
 
     // insert処理
-    db.NewRecord(&assignee);
+    // db.NewRecord(&assignee);
     db.Create(&assignee);
+    // if err := db.Model(&task).Association("assignees").Append(&assignee).Error; err != nil {
+    //   c.JSON(http.StatusBadRequest, gin.H{
+    //     "error": err.Error(),
+    //   })
+    //   return
+    // }
+
 		c.JSON(http.StatusOK, gin.H{
       "code": http.StatusOK,
       "status": "ok",
