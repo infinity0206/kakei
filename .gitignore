@@ -1,1 +1,3 @@
 gin-bin*
+main*
+!main.go
