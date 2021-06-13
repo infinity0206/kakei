@@ -6,7 +6,6 @@ import (
   _ "github.com/jinzhu/gorm/dialects/mysql"
   "github.com/joho/godotenv"
   "main/entity"
-  // "fmt"
 )
 
 var (
@@ -34,29 +33,6 @@ func Init() {
   DropTables()
   autoMigration()
 }
-
-// func GetDBConn() *gorm.DB {
-// 	db, err := gorm.Open(GetDBConfig())
-// 	if err != nil {
-// 		panic(err)
-// 	}
-  
-// 	db.LogMode(true)
-// 	return db
-//   }
-  
-// func GetDBConfig() (string, string) {
-// 	DBMS := "mysql"
-// 	USER := "admin"
-// 	PASS := "admin"
-// 	PROTOCOL := "tcp(mysql)"
-// 	DBNAME := "root"
-// 	OPTION := "charset=utf8&parseTime=True&loc=Local"
-  
-// 	CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?" + OPTION
-  
-// 	return DBMS, CONNECT
-// }
 
 // DB取得
 func GetDB() *gorm.DB {
